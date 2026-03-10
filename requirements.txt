@@ -1,0 +1,15 @@
+google-play-scraper
+groq
+pandas
+google-generativeai
+python-dotenv
+pytz
+lucid-react
+fastapi
+uvicorn
+requests
+jinja2
+markdown
+# For scheduling
+schedule
+APScheduler

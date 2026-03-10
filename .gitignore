@@ -1,0 +1,12 @@
+.env
+*.db
+*.log
+node_modules/
+.next/
+dist/
+build/
+__pycache__/
+*.pyc
+.DS_Store
+weekly_pulse.md
+phase2_llm/analysis_results.json
