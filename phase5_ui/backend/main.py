@@ -118,16 +118,26 @@ async def trigger_phase(phase: str, email: str = None, weeks: int = 12, limit: i
         command.append(email)
     
     try:
-        # Run the script in the background
-        process = subprocess.Popen(
-            command,
-            cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        return {"status": "started", "phase": phase, "pid": process.pid}
+        # Run the script in the background and redirect output to a log file
+        log_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", f"{phase}.log"))
+        with open(log_file, "w") as f:
+            process = subprocess.Popen(
+                command,
+                cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
+                stdout=f,
+                stderr=subprocess.STDOUT
+            )
+        return {"status": "started", "phase": phase, "pid": process.pid, "log": f"/api/logs/{phase}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/logs/{phase}")
+async def get_logs(phase: str):
+    log_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", f"{phase}.log"))
+    if not os.path.exists(log_file):
+        return {"error": "Log file not found"}
+    with open(log_file, "r") as f:
+        return {"logs": f.read()}
 
 if __name__ == "__main__":
     import uvicorn
