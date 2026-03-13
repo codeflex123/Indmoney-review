@@ -43,9 +43,14 @@ class ReviewAnalyzer:
         1. Identify 3-5 high-level recurring themes.
         2. Select the TOP 3 most impactful and representative "real user quotes" from the text.
         
+        CRITICAL PRIVACY RULE: 
+        - DO NOT include ANY user names, specific dates, email addresses, or phone numbers in the quotes or themes.
+        - If a quote contains a name, redact it with [NAME]. replace specific dates with [DATE].
+        - Focus on the feedback/sentiment, NOT the person.
+        
         Return a JSON object with:
         - "themes": a list of strings
-        - "quotes": a list of strings (exact text from the reviews)
+        - "quotes": a list of strings (exact text from the reviews, but REDACTED as per rules)
         
         Reviews:
         {reviews_text}

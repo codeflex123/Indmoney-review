@@ -29,6 +29,23 @@ def is_mostly_english(text):
         return False
     return matches >= 1
 
+def clean_pii(text):
+    """Redacts PII (Emails, Phones, specific headers) from text."""
+    if not text:
+        return text
+    
+    # 1. Redact Emails
+    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[EMAIL]', text)
+    
+    # 2. Redact Phone Numbers (standard Indian/International formats)
+    text = re.sub(r'\+?\d{2,3}[\s-]?\d{4,5}[\s-]?\d{4,5}', '[PHONE]', text)
+    
+    # 3. Strip "Name Date Time" headers often found in scrapers
+    # Example: "Himanshu Shinde 02 Feb 2026, 02:46 PM"
+    text = re.sub(r'^[A-Za-z\s]{3,}\d{2} [A-Za-z]{3} \d{4},? \d{2}:\d{2} [AP]M:?', '', text).strip()
+    
+    return text
+
 def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
     """Scrapes reviews for INDmoney from the Play Store."""
     print(f"Starting scrape for {APP_ID}...")
@@ -63,6 +80,9 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
             
             content = re.sub(r'[^\x00-\x7F]+', ' ', r['content'])
             content = re.sub(r'\s+', ' ', content).strip()
+            
+            # Apply PII cleaning
+            content = clean_pii(content)
             
             if len(content.split()) < 6 or not is_mostly_english(content):
                 continue

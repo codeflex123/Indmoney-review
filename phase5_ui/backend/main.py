@@ -144,6 +144,12 @@ async def get_logs(phase: str):
 async def ping():
     return {"status": "pong", "timestamp": datetime.now().isoformat()}
 
+@app.get("/api/admin/cleanup-pii")
+def cleanup_pii_db():
+    from cleanup_pii import run_cleanup
+    count = run_cleanup()
+    return {"status": "success", "updated_count": count}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
