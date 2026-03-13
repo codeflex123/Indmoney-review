@@ -25,8 +25,16 @@ app.add_middleware(
 async def root():
     return {"message": "INDmoney Review Analytics API is running", "endpoints": ["/api/reviews", "/api/analysis"]}
 
-from db import get_db_connection
+from db import get_db_connection, init_db
 from config import Config
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        init_db()
+        print("Database initialized on startup.")
+    except Exception as e:
+        print(f"Error initializing database on startup: {e}")
 
 DB_PATH = Config.DB_NAME
 ANALYSIS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "phase2_llm", "analysis_results.json"))
