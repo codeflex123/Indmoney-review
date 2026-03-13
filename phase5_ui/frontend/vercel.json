@@ -2,6 +2,5 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "rootDirectory": "phase5_ui/frontend"
+  "outputDirectory": ".next"
 }
