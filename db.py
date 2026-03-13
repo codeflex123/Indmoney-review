@@ -3,14 +3,23 @@ import os
 from config import Config
 
 def get_db_connection():
-    """Returns a connection to the database (Postgres or SQLite)."""
+    """Returns a raw connection to the database."""
     if Config.DATABASE_URL:
-        # For Postgres, we use psycopg2
         import psycopg2
         return psycopg2.connect(Config.DATABASE_URL)
-    
-    # Fallback to local SQLite
+    import sqlite3
     return sqlite3.connect(Config.DB_NAME)
+
+def get_db_engine():
+    """Returns a SQLAlchemy engine for Pandas/advanced operations."""
+    from sqlalchemy import create_url, create_engine
+    if Config.DATABASE_URL:
+        # standard postgresql:// vs postgres:// fix
+        url = Config.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return create_engine(url)
+    return create_engine(f"sqlite:///{Config.DB_NAME}")
 
 def init_db():
     """Initializes the database schema for both SQLite and Postgres."""

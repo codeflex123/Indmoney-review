@@ -8,7 +8,7 @@ import sys
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
-from db import get_db_connection, init_db
+from db import get_db_connection, init_db, get_db_engine
 
 # Configuration for INDmoney
 APP_ID = 'in.indwealth' 
@@ -37,10 +37,9 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
     existing_ids = set()
     if stop_at_existing:
         try:
-            conn = get_db_connection()
+            engine = get_db_engine()
             col = "review_id" if Config.DATABASE_URL else "reviewId"
-            existing_ids = set(pd.read_sql(f"SELECT {col} FROM reviews", conn)[col].tolist())
-            conn.close()
+            existing_ids = set(pd.read_sql(f"SELECT {col} FROM reviews", engine)[col].tolist())
         except Exception as e:
             print(f"Note: Could not fetch existing IDs: {e}")
 
@@ -73,7 +72,7 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
                 'content': content,
                 'score': r['score'],
                 'thumbsUpCount': r['thumbsUpCount'],
-                'at': r['at'].isoformat()
+                'at': r['at']
             })
             if len(all_reviews) >= max_count:
                 stop_signal = True
@@ -87,7 +86,7 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
 def save_to_db(review_list):
     """Saves the fetched reviews to the database."""
     if not review_list: return
-    conn = get_db_connection()
+    engine = get_db_engine()
     df = pd.DataFrame(review_list)
     
     # Standardize field names for SQLite vs Postgres
@@ -98,12 +97,10 @@ def save_to_db(review_list):
         })
     
     try:
-        df.to_sql('reviews', conn, if_exists='append', index=False)
+        df.to_sql('reviews', engine, if_exists='append', index=False)
         print(f"Saved {len(review_list)} new reviews to database.")
     except Exception as e:
         print(f"Error saving to database: {e}")
-    finally:
-        conn.close()
 
 def save_to_json(review_list):
     """Saves a preview for local reference."""
