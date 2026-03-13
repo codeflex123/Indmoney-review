@@ -12,6 +12,12 @@ export async function fetchAnalysis() {
     return response.json();
 }
 
+export async function fetchEmailPreview() {
+    const response = await fetch(`${API_BASE_URL}/preview`);
+    if (!response.ok) throw new Error('Failed to fetch email preview');
+    return response.json();
+}
+
 export async function triggerPhase(
     phase: 'scrape' | 'analyze' | 'pulsar' | 'email', 
     params?: { email?: string; weeks?: number; limit?: number }

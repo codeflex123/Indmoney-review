@@ -2,8 +2,8 @@ name: Weekly Review Audit
 
 on:
   schedule:
-    # 3:55 PM IST is 10:25 AM UTC
-    - cron: '25 10 * * 2'
+    # 3:50 PM IST is 10:20 AM UTC
+    - cron: '20 10 * * 2'
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:

@@ -4,7 +4,7 @@ import { Play, Activity, Mail, RefreshCw, Calendar, Users, Send } from 'lucide-r
 import { triggerPhase } from '@/lib/api';
 import { useState } from 'react';
 
-export default function ControlPanel() {
+export default function ControlPanel({ onShowPreview }: { onShowPreview?: () => void }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [weeks, setWeeks] = useState(12);
@@ -13,12 +13,18 @@ export default function ControlPanel() {
   const handleAction = async (phase: 'scrape' | 'analyze' | 'pulsar' | 'email') => {
     setLoading(phase);
     try {
-      await triggerPhase(phase, {
-        email: phase === 'email' ? email : undefined,
-        weeks: phase === 'scrape' ? weeks : undefined,
-        limit: phase === 'scrape' ? limit : undefined,
-      });
-      alert(`Successfully triggered: ${phase.toUpperCase()}`);
+      if (phase === 'scrape') {
+        // Combined Full Analysis run
+        await triggerPhase('scrape', { weeks, limit });
+        await triggerPhase('analyze');
+        await triggerPhase('pulsar');
+        alert('Full Analysis Completed Successfully!');
+      } else {
+        await triggerPhase(phase, {
+          email: phase === 'email' ? email : undefined,
+        });
+        alert(`Successfully triggered: ${phase.toUpperCase()}`);
+      }
     } catch (error) {
       alert(`Error triggering ${phase}: ${error}`);
     } finally {
@@ -72,42 +78,8 @@ export default function ControlPanel() {
           className="ml-auto flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all font-semibold text-sm shadow-lg shadow-blue-500/20 disabled:opacity-50"
         >
           <RefreshCw className={loading === 'scrape' ? 'animate-spin' : ''} size={18} />
-          Sync Data
+          Run Full Analysis
         </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="glass-card p-4 rounded-2xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-500/10 rounded-lg">
-              <Activity className="text-indigo-400" size={18} />
-            </div>
-            <span className="text-sm font-medium text-slate-200">Refine Categories</span>
-          </div>
-          <button
-            onClick={() => handleAction('analyze')}
-            disabled={!!loading}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-all text-xs font-bold disabled:opacity-50"
-          >
-            Run Llama Engine
-          </button>
-        </div>
-
-        <div className="glass-card p-4 rounded-2xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-fuchsia-500/10 rounded-lg">
-              <Play className="text-fuchsia-400" size={18} />
-            </div>
-            <span className="text-sm font-medium text-slate-200">Intelligence Report</span>
-          </div>
-          <button
-            onClick={() => handleAction('pulsar')}
-            disabled={!!loading}
-            className="px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg transition-all text-xs font-bold disabled:opacity-50"
-          >
-            Launch Gemini
-          </button>
-        </div>
       </div>
 
       <div className="glass-card p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-center">
@@ -123,14 +95,23 @@ export default function ControlPanel() {
             className="bg-transparent border-none outline-none text-sm w-full placeholder:text-slate-500"
           />
         </div>
-        <button
-          onClick={() => handleAction('email')}
-          disabled={!!loading}
-          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all text-xs font-bold shadow-lg shadow-orange-500/10 disabled:opacity-50"
-        >
-          <Send size={16} />
-          Deliver Pulse
-        </button>
+        <div className="flex gap-4 w-full md:w-auto">
+          <button
+            onClick={() => onShowPreview?.()}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all text-xs font-bold shadow-lg disabled:opacity-50"
+          >
+            <Activity size={16} />
+            Generate Email Preview
+          </button>
+          <button
+            onClick={() => handleAction('email')}
+            disabled={!!loading}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl transition-all text-xs font-bold shadow-lg shadow-orange-500/10 disabled:opacity-50"
+          >
+            <Send size={16} />
+            Deliver Pulse
+          </button>
+        </div>
       </div>
     </div>
   );

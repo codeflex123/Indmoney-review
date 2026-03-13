@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchReviews, fetchAnalysis } from '@/lib/api';
+import { fetchReviews, fetchAnalysis, fetchEmailPreview } from '@/lib/api';
 import ControlPanel from '@/components/ControlPanel';
 import ThemeChart from '@/components/ThemeChart';
 import ReviewTable from '@/components/ReviewTable';
-import { Activity, Star, MessageSquare, ShieldCheck, Zap, TrendingUp, Sparkles } from 'lucide-react';
+import { Activity, Star, MessageSquare, ShieldCheck, Zap, TrendingUp, Sparkles, X, FileText } from 'lucide-react';
 
 export default function Dashboard() {
   const [reviews, setReviews] = useState([]);
   const [analysis, setAnalysis] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [showingPreview, setShowingPreview] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -30,6 +32,19 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  const handleShowPreview = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchEmailPreview();
+      setPreviewContent(data.content);
+      setShowingPreview(true);
+    } catch (error) {
+      alert('Failed to fetch email preview');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
@@ -40,10 +55,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const avgRating = reviews.length > 0 
-    ? (reviews.reduce((acc: number, r: any) => acc + r.score, 0) / reviews.length).toFixed(1)
-    : '0';
 
   return (
     <div className="min-h-screen bg-[#0f172a] selection:bg-blue-500/30">
@@ -69,28 +80,41 @@ export default function Dashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          {[
-            { label: 'Avg Satisfaction', val: avgRating + ' / 5.0', icon: Star, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-            { label: 'Intelligence Depth', val: reviews.length + ' Reviews', icon: MessageSquare, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-            { label: 'AI Resolution', val: 'Llama 3.1 & Gemini', icon: Sparkles, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
-            { label: 'Data Integrity', val: 'De-identified', icon: ShieldCheck, color: 'text-emerald-400', bg: 'bg-emerald-400/10' }
-          ].map((stat, i) => (
-            <div key={i} className="glass-card p-6 rounded-2xl">
-              <div className="flex items-center gap-4 mb-3">
-                <div className={`p-2 rounded-lg ${stat.bg}`}>
-                  <stat.icon className={stat.color} size={18} />
-                </div>
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{stat.label}</span>
-              </div>
-              <p className="text-2xl font-black text-slate-100">{stat.val}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Action Center */}
-        <ControlPanel />
+        <ControlPanel onShowPreview={handleShowPreview} />
+
+        {/* Email Preview Modal */}
+        {showingPreview && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-slate-900 border border-slate-700 w-full max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col">
+              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/10 rounded-lg text-orange-400">
+                    <FileText size={20} />
+                  </div>
+                  <h3 className="font-bold text-slate-100 uppercase tracking-widest text-sm">Email Content Preview</h3>
+                </div>
+                <button 
+                  onClick={() => setShowingPreview(false)}
+                  className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-8 overflow-y-auto bg-slate-950 text-slate-300 font-mono text-sm whitespace-pre-wrap leading-relaxed">
+                {previewContent}
+              </div>
+              <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+                <button 
+                  onClick={() => setShowingPreview(false)}
+                  className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-bold transition-all"
+                >
+                  Close Preview
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
           {/* Intelligence Cluster */}
@@ -110,11 +134,16 @@ export default function Dashboard() {
               </div>
               
               <div className="space-y-6 flex-1">
-                {analysis?.top_quotes?.map((quote: string, i: number) => (
+                {analysis?.top_quotes?.map((quote: any, i: number) => (
                   <div key={i} className="relative group">
                     <div className="absolute -left-4 top-0 bottom-0 w-1 bg-indigo-500/30 rounded-full group-hover:bg-indigo-500 transition-all"></div>
+                    <div className="flex items-center gap-1 mb-1">
+                      {[...Array(quote.score || 5)].map((_, j) => (
+                        <Star key={j} size={10} className="fill-fuchsia-400 text-fuchsia-400" />
+                      ))}
+                    </div>
                     <blockquote className="text-slate-300 italic text-sm leading-relaxed pl-2 group-hover:text-white transition-colors">
-                      "{quote}"
+                      "{quote.content || quote}"
                     </blockquote>
                   </div>
                 ))}

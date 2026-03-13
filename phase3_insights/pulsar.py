@@ -51,16 +51,19 @@ class Pulsar:
         )
         
         response_text = response.text
-        response_json = json.loads(response_text)
+        response_json = json.loads(response.text)
         
-        # Extract list from potential wrapper
+        # Extract list from potential wrapper or direct list
         actions = []
-        for val in response_json.values():
-            if isinstance(val, list):
-                actions = val[:3]
-                break
-        if not actions and isinstance(response, list):
-            actions = response[:3]
+        if isinstance(response_json, list):
+            actions = response_json[:3]
+        elif isinstance(response_json, dict):
+            for val in response_json.values():
+                if isinstance(val, list):
+                    actions = val[:3]
+                    break
+            
+        return actions
             
         return actions
 

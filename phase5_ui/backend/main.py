@@ -21,6 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "INDmoney Review Analytics API is running", "endpoints": ["/api/reviews", "/api/analysis"]}
+
 DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reviews.db"))
 ANALYSIS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "phase2_llm", "analysis_results.json"))
 
@@ -44,6 +48,17 @@ async def get_analysis():
     try:
         with open(ANALYSIS_PATH, "r") as f:
             return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/preview")
+async def get_preview():
+    preview_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "weekly_pulse.md"))
+    if not os.path.exists(preview_path):
+        return {"content": "Preview not available. Please run analysis first."}
+    try:
+        with open(preview_path, "r") as f:
+            return {"content": f.read()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -4,17 +4,25 @@ import os
 import sys
 from datetime import datetime
 import pytz
+import logging
 
 # Add the project root to sys.path to allow importing config.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config
 
-# Configuration
-SCHEDULE_TIME = "15:55"
-SCHEDULE_DAY = 1 # 0=Monday, 1=Tuesday, ...
+# Setup logging to a separate file
+log_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scheduler.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler()
+    ]
+)
 
 def run_pipeline():
-    print(f"\n[{datetime.now()}] 🚀 Starting Automated Weekly Review Audit...")
+    logging.info("🚀 Starting Automated Review Audit Pipeline...")
     
     steps = [
         ["python3", "phase1_ingestion/scraper.py", "--count", "500", "--weeks", "12"],
@@ -26,22 +34,34 @@ def run_pipeline():
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     for cmd in steps:
-        print(f"[{datetime.now()}] Running: {' '.join(cmd)}")
+        logging.info(f"Running: {' '.join(cmd)}")
         try:
-            result = subprocess.run(
-                cmd, 
+            # Run the command and capture output line by line
+            process = subprocess.Popen(
+                cmd,
                 cwd=project_root,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
-                check=True
+                bufsize=1
             )
-            print(f"[{datetime.now()}] ✅ Step Success: {cmd[1]}")
-        except subprocess.CalledProcessError as e:
-            print(f"[{datetime.now()}] ❌ Step Failed: {cmd[1]}")
-            print(f"Error: {e.stderr}")
+            
+            # Stream output to logging
+            if process.stdout:
+                for line in process.stdout:
+                    logging.info(f"[{cmd[1].split('/')[1] if '/' in cmd[1] else cmd[1]}] {line.strip()}")
+            
+            process.wait()
+            if process.returncode != 0:
+                logging.error(f"❌ Step Failed: {cmd[1]} with return code {process.returncode}")
+                return False
+            
+            logging.info(f"✅ Step Success: {cmd[1]}")
+        except Exception as e:
+            logging.error(f"❌ Unexpected Error in {cmd[1]}: {str(e)}")
             return False
             
-    print(f"[{datetime.now()}] ✨ Full Pipeline Completed Successfully!")
+    logging.info("✨ Full Pipeline Completed Successfully!")
     return True
 
 def main():
@@ -49,20 +69,25 @@ def main():
         run_pipeline()
         return
 
-    print(f"[{datetime.now()}] 🕰 Orchestrator started. Waiting for Tuesday {SCHEDULE_TIME} IST...")
+    logging.info("🕰 Orchestrator started. Mode: Weekly (Tuesday 15:50 IST)")
     
     ist = pytz.timezone('Asia/Kolkata')
+    last_trigger_minute = -1
     
     while True:
         now_ist = datetime.now(ist)
-        # check if today is Tuesday (1) and time matches 15:55
-        if now_ist.weekday() == SCHEDULE_DAY and now_ist.strftime("%H:%M") == SCHEDULE_TIME:
-            print(f"[{now_ist}] ⚡ Schedule triggered!")
-            run_pipeline()
-            # Wait a minute so we don't trigger multiple times in the same minute
-            time.sleep(61)
+        current_minute = now_ist.minute
+        
+        # Trigger every Tuesday at 15:50 IST
+        # Weekday 1 is Tuesday (0=Monday, 1=Tuesday...)
+        if now_ist.weekday() == 1 and now_ist.hour == 15 and now_ist.minute == 50 and current_minute != last_trigger_minute:
+            logging.info(f"⚡ Weekly Schedule triggered at {now_ist.strftime('%H:%M')} IST")
+            success = run_pipeline()
+            if not success:
+                logging.error("Pipeline failed during scheduled run.")
+            last_trigger_minute = current_minute
             
-        time.sleep(30) # Check every 30 seconds
+        time.sleep(10) # Check every 10 seconds for higher precision
 
 if __name__ == "__main__":
     main()

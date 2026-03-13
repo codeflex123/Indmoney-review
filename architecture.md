@@ -66,10 +66,10 @@ Automated system to analyze Play Store reviews for **INDmoney**, extract themes 
     - **"Send Weekly Note"**: Trigger Phase 4 email dispatch.
 
 ### Phase 6: Scheduler & Automation
-- **Platform**: GitHub Actions (Cloud Automation).
-- **Workflow**:
-  - **Trigger**: Every **Tuesday at 3:55 PM IST** (10:25 AM UTC).
-  - **Sequence**: Scrape (12 weeks/500 count) -> Analyze (Groq) -> Pulsar (Gemini) -> Email.
+- **Orchestrator**: Handled by a dedicated Python script (`orchestrator.py`) and backed up by GitHub Actions.
+- **Schedule**: Every Tuesday at **3:50 PM IST** (to ensure delivery by 3:55 PM).
+- **Process**: Automatic sequential execution of Phase 1 through Phase 4.
+- **Cloud Execution**: GitHub Actions workflow (`weekly_audit.yml`) triggers on the same schedule for 100% reliability.
   - **Fixed Recipient**: `stumpmikecricket6@gmail.com`.
   - **Status Logging**: Each step logs completion to ensure the chain isn't broken.
 
