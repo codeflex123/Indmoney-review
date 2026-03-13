@@ -12,7 +12,7 @@ def get_db_connection():
 
 def get_db_engine():
     """Returns a SQLAlchemy engine for Pandas/advanced operations."""
-    from sqlalchemy import create_url, create_engine
+    from sqlalchemy import create_engine
     if Config.DATABASE_URL:
         # standard postgresql:// vs postgres:// fix
         url = Config.DATABASE_URL
