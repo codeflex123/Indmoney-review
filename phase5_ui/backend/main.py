@@ -142,7 +142,7 @@ async def get_logs(phase: str):
 
 @app.get("/api/ping")
 async def ping():
-    return {"status": "pong", "timestamp": datetime.now().isoformat()}
+    return {"status": "pong", "version": "pii_redact_v1", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/admin/cleanup-pii")
 def cleanup_pii_db():
