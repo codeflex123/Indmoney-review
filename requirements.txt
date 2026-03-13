@@ -12,4 +12,5 @@ jinja2
 markdown
 # For scheduling
 schedule
-APScheduler
+psycopg2-binary
+sqlalchemy

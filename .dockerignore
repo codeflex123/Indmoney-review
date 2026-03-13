@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.db
+.sqlite
+.env
+.git
+.gitignore
+node_modules
+phase5_ui/frontend
+reviews.db
+analysis_results.json
+weekly_pulse.md
+scheduler.log

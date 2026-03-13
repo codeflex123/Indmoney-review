@@ -9,16 +9,12 @@ import json
 import re
 import time
 from groq import Groq
-from config import Config
-from datetime import datetime
-
-import logging
+from db import get_db_connection
 
 class ReviewAnalyzer:
     def __init__(self):
         Config.validate()
         self.client = Groq(api_key=Config.GROQ_API_KEY)
-        self.db_path = Config.DB_NAME
         self.themes = []
         
         # Setup logging
@@ -26,9 +22,10 @@ class ReviewAnalyzer:
 
     def get_reviews_from_db(self):
         """Fetches all reviews from the database."""
-        conn = sqlite3.connect(self.db_path)
+        conn = get_db_connection()
+        col_id = "review_id" if Config.DATABASE_URL else "reviewId"
         cursor = conn.cursor()
-        cursor.execute("SELECT reviewId, content, score FROM reviews")
+        cursor.execute(f"SELECT {col_id}, content, score FROM reviews")
         rows = cursor.fetchall()
         conn.close()
         return [{"reviewId": r[0], "content": r[1], "score": r[2]} for r in rows]
@@ -83,60 +80,69 @@ class ReviewAnalyzer:
                 
         return self.themes, final_quotes
 
+    def _process_batch(self, batch, themes):
+        """Processes a single batch of reviews for categorization."""
+        reviews_input = "\n".join([f"ID: {r['reviewId']} | {r['content']}" for r in batch])
+        
+        prompt = f"""
+        Categorize each review into one of the following themes: {', '.join(themes)} or 'Other'.
+        You must return a valid JSON object where keys are the review IDs and values are the theme names.
+        
+        Format:
+        {{
+            "id_1": "Theme A",
+            "id_2": "Other"
+        }}
+        
+        Reviews:
+        {reviews_input}
+        """
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                completion = self.client.chat.completions.create(
+                    model=Config.MODEL_NAME,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"},
+                    max_tokens=4096,
+                    timeout=60
+                )
+                return json.loads(completion.choices[0].message.content)
+            except Exception as e:
+                logging.warning(f"Attempt {attempt + 1} failed for batch categorization: {str(e)}")
+                if attempt == max_retries - 1:
+                    logging.error("Max retries reached for batch categorization. Skipping batch.")
+                else:
+                    time.sleep(2 * (attempt + 1)) 
+        return {}
+
     def categorize_reviews(self, all_reviews):
-        """Categorizes all reviews into the discovered themes in batches."""
-        print(f"Categorizing {len(all_reviews)} reviews into themes...")
+        """Categorizes all reviews into the discovered themes using parallel processing."""
+        from concurrent.futures import ThreadPoolExecutor
+        
+        logging.info(f"Categorizing {len(all_reviews)} reviews into themes using parallel processing...")
         categorized_data = {theme: [] for theme in self.themes}
         categorized_data["Other"] = []
         
-        batch_size = 50
-        for i in range(0, len(all_reviews), batch_size):
-            batch = all_reviews[i:i+batch_size]
-            reviews_input = "\n".join([f"ID: {r['reviewId']} | {r['content']}" for r in batch])
-            
-            logging.info(f"Categorizing batch {i//batch_size + 1} (Size: {len(batch)})...")
-            
-            prompt = f"""
-            Categorize each review into one of the following themes: {', '.join(self.themes)} or 'Other'.
-            You must return a valid JSON object where keys are the review IDs and values are the theme names.
-            
-            Format:
-            {{
-                "id_1": "Theme A",
-                "id_2": "Other"
-            }}
-            
-            Reviews:
-            {reviews_input}
-            """
-            
-            max_retries = 3
-            mapping = {}
-            for attempt in range(max_retries):
+        batch_size = 100
+        batches = [all_reviews[i:i + batch_size] for i in range(0, len(all_reviews), batch_size)]
+        
+        results_map = {}
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            future_to_batch = {executor.submit(self._process_batch, batch, self.themes): batch for batch in batches}
+            for future in future_to_batch:
                 try:
-                    completion = self.client.chat.completions.create(
-                        model=Config.MODEL_NAME,
-                        messages=[{"role": "user", "content": prompt}],
-                        response_format={"type": "json_object"},
-                        max_tokens=4096,
-                        timeout=60
-                    )
-                    mapping = json.loads(completion.choices[0].message.content)
-                    break 
+                    batch_mapping = future.result()
+                    results_map.update(batch_mapping)
                 except Exception as e:
-                    logging.warning(f"Attempt {attempt + 1} failed for batch categorization: {str(e)}")
-                    if attempt == max_retries - 1:
-                        logging.error("Max retries reached for batch categorization. Skipping batch.")
-                    else:
-                        time.sleep(10) # Wait before retry
-            
-            for review in batch:
-                theme = mapping.get(review['reviewId'], "Other")
-                if theme not in categorized_data:
-                    theme = "Other"
-                categorized_data[theme].append(review)
-            
-            time.sleep(2) # Reduced delay as retries handle 429s eventually
+                    logging.error(f"Error in parallel batch: {e}")
+
+        for review in all_reviews:
+            theme = results_map.get(review['reviewId'], "Other")
+            if theme not in categorized_data:
+                theme = "Other"
+            categorized_data[theme].append(review)
             
         return categorized_data
 

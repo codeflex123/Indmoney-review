@@ -25,19 +25,47 @@ app.add_middleware(
 async def root():
     return {"message": "INDmoney Review Analytics API is running", "endpoints": ["/api/reviews", "/api/analysis"]}
 
-DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reviews.db"))
+from db import get_db_connection
+from config import Config
+
+DB_PATH = Config.DB_NAME
 ANALYSIS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "phase2_llm", "analysis_results.json"))
 
 @app.get("/api/reviews")
 async def get_reviews(limit: int = 100):
     try:
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
+        conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM reviews ORDER BY at DESC LIMIT ?", (limit,))
-        rows = cursor.fetchall()
+        
+        # Determine column name for 'at'
+        at_col = "at" 
+        
+        cursor.execute(f"SELECT * FROM reviews ORDER BY {at_col} DESC LIMIT {limit}")
+        
+        # Standardize rows
+        if Config.DATABASE_URL:
+            # Postgres returns tuples/named tuples depending on driver
+            rows = cursor.fetchall()
+            columns = [col[0] for col in cursor.description]
+            result = []
+            for row in rows:
+                row_dict = dict(zip(columns, row))
+                result.append({
+                    "reviewId": row_dict.get("review_id"),
+                    "content": row_dict.get("content"),
+                    "score": row_dict.get("score"),
+                    "thumbsUpCount": row_dict.get("thumbs_up_count"),
+                    "at": row_dict.get("at")
+                })
+        else:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT * FROM reviews ORDER BY at DESC LIMIT {limit}")
+            rows = cursor.fetchall()
+            result = [dict(row) for row in rows]
+            
         conn.close()
-        return [dict(row) for row in rows]
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
