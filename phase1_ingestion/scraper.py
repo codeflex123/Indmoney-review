@@ -36,7 +36,7 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
     if not words:
         return False
     matches = sum(1 for w in words if w in common_english)
-    if re.search(r'[\u0900-\u097F]', text):
+    if re.search(r'[\u0900-\u097F]', text): # Check for common Indian language Unicode range
         return False
     return matches >= 1
 
@@ -69,8 +69,8 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
             conn = sqlite3.connect(DB_NAME)
             existing_ids = set(pd.read_sql('SELECT reviewId FROM reviews', conn)['reviewId'].tolist())
             conn.close()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Note: Could not fetch existing IDs: {e}")
 
     all_reviews = []
     continuation_token = None

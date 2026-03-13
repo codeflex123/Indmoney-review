@@ -1,6 +1,5 @@
 import sqlite3
 import os
-import sys
 from config import Config
 
 def get_db_connection():
@@ -20,7 +19,6 @@ def init_db():
     
     if Config.DATABASE_URL:
         # Postgres Schema (Snake Case)
-        cursor.execute('DROP TABLE IF EXISTS reviews')
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS reviews (
                 review_id TEXT PRIMARY KEY,
@@ -31,8 +29,7 @@ def init_db():
             )
         ''')
     else:
-        # SQLite Schema (Camel Case - matching existing code)
-        cursor.execute('DROP TABLE IF EXISTS reviews')
+        # SQLite Schema (Camel Case)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS reviews (
                 reviewId TEXT PRIMARY KEY,

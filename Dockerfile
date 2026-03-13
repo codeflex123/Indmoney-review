@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies (for psycopg2 if we use it, or for general stability)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
@@ -17,12 +17,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire project
 COPY . .
 
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
 # Expose the API port
 EXPOSE 8000
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-
 # Command to run the application
-# We use uvicorn directly to ensure it works in the container
-CMD ["uvicorn", "phase5_ui.backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Railway provides the PORT environment variable
+CMD uvicorn phase5_ui.backend.main:app --host 0.0.0.0 --port ${PORT:-8000}
