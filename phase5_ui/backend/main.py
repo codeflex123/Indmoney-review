@@ -25,8 +25,8 @@ app.add_middleware(
 async def root():
     return {"message": "INDmoney Review Analytics API is running", "endpoints": ["/api/reviews", "/api/analysis"]}
 
-DB_PATH = os.getenv("DATABASE_PATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reviews.db")))
-ANALYSIS_PATH = os.getenv("ANALYSIS_PATH", os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "phase2_llm", "analysis_results.json")))
+DB_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "reviews.db"))
+ANALYSIS_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "phase2_llm", "analysis_results.json"))
 
 @app.get("/api/reviews")
 async def get_reviews(limit: int = 100):
