@@ -150,6 +150,13 @@ def cleanup_pii_db():
     count = run_cleanup()
     return {"status": "success", "updated_count": count}
 
+@app.get("/api/admin/run-analysis")
+def run_analysis_admin():
+    import subprocess
+    # Run in the background
+    subprocess.Popen([sys.executable, "phase2_llm/analyzer.py"])
+    return {"status": "started", "message": "Analysis is running in the background. Check /api/logs/phase2 for progress."}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
