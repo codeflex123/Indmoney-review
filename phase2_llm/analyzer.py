@@ -4,11 +4,13 @@ import os
 # Add the project root to sys.path to allow importing config.py
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import sqlite3
 import json
 import re
 import time
+import logging
+from datetime import datetime
 from groq import Groq
+from config import Config
 from db import get_db_connection
 
 class ReviewAnalyzer:
