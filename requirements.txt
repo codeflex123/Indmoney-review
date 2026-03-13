@@ -4,7 +4,6 @@ pandas
 google-generativeai
 python-dotenv
 pytz
-lucid-react
 fastapi
 uvicorn
 requests
