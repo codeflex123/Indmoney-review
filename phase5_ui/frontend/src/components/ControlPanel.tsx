@@ -1,7 +1,7 @@
 'use client';
 
 import { Play, Activity, Mail, RefreshCw, Calendar, Users, Send } from 'lucide-react';
-import { triggerPhase } from '@/lib/api';
+import { triggerPhase, triggerPipeline } from '@/lib/api';
 import { useState } from 'react';
 
 export default function ControlPanel({ onShowPreview }: { onShowPreview?: () => void }) {
@@ -16,8 +16,7 @@ export default function ControlPanel({ onShowPreview }: { onShowPreview?: () => 
       if (phase === 'scrape') {
         // Combined Full Analysis run
         await triggerPhase('scrape', { weeks, limit });
-        await triggerPhase('analyze');
-        await triggerPhase('pulsar');
+        await triggerPipeline();
         alert('Full Analysis Completed Successfully!');
       } else {
         await triggerPhase(phase, {

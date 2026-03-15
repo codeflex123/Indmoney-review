@@ -150,12 +150,30 @@ def cleanup_pii_db():
     count = run_cleanup()
     return {"status": "success", "updated_count": count}
 
-@app.get("/api/admin/run-analysis")
-def run_analysis_admin():
+@app.get("/api/admin/run-pipeline")
+def run_pipeline_admin():
     import subprocess
-    # Run in the background
-    subprocess.Popen([sys.executable, "phase2_llm/analyzer.py"])
-    return {"status": "started", "message": "Analysis is running in the background. Check /api/logs/phase2 for progress."}
+    # Run analyzer and pulsar sequentially in the background to avoid ephemeral state loss between manual clicks
+    cmd = f"{sys.executable} phase2_llm/analyzer.py && {sys.executable} phase3_insights/pulsar.py"
+    
+    log_file = "/tmp/pipeline.log"
+    with open(log_file, "w") as f:
+        subprocess.Popen(
+            cmd,
+            shell=True,
+            cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
+            stdout=f,
+            stderr=subprocess.STDOUT
+        )
+    return {"status": "started", "message": "Full Analysis & Pulse generation is running in the background. Check /api/logs/pipeline for progress."}
+
+@app.get("/api/logs/pipeline")
+async def get_pipeline_logs():
+    log_file = "/tmp/pipeline.log"
+    if not os.path.exists(log_file):
+        return {"error": "Log file not found"}
+    with open(log_file, "r") as f:
+        return {"logs": f.read()}
 
 if __name__ == "__main__":
     import uvicorn

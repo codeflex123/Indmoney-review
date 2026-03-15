@@ -35,3 +35,9 @@ export async function triggerPhase(
     if (!response.ok) throw new Error(`Failed to trigger ${phase}`);
     return response.json();
 }
+
+export async function triggerPipeline() {
+    const response = await fetch(`${API_BASE_URL}/admin/run-pipeline`);
+    if (!response.ok) throw new Error(`Failed to trigger pipeline`);
+    return response.json();
+}
