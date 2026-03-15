@@ -6,6 +6,7 @@ load_dotenv()
 
 class Config:
     GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    GROQ_API_KEY_2 = os.getenv("GROQ_API_KEY_2") # Optional fallback key
     GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     DATABASE_URL = os.getenv("DATABASE_URL")
     DB_NAME = os.path.join(os.path.dirname(__file__), "reviews.db")

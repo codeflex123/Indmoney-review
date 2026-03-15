@@ -16,11 +16,26 @@ from db import get_db_connection
 class ReviewAnalyzer:
     def __init__(self):
         Config.validate()
-        self.client = Groq(api_key=Config.GROQ_API_KEY)
+        
+        self.api_keys = [Config.GROQ_API_KEY]
+        if getattr(Config, 'GROQ_API_KEY_2', None):
+            self.api_keys.append(Config.GROQ_API_KEY_2)
+            
+        self.current_key_idx = 0
+        self.client = Groq(api_key=self.api_keys[self.current_key_idx])
         self.themes = []
         
         # Setup logging
         logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+
+    def _switch_api_key(self):
+        """Switches to the next available API key if rate limits or errors occur."""
+        if len(self.api_keys) > 1:
+            self.current_key_idx = (self.current_key_idx + 1) % len(self.api_keys)
+            self.client = Groq(api_key=self.api_keys[self.current_key_idx])
+            logging.warning(f"🔄 Switched to Groq API Key {self.current_key_idx + 1} due to API errors or rate limits.")
+            return True
+        return False
 
     def get_reviews_from_db(self):
         """Fetches all reviews from the database."""
@@ -56,12 +71,24 @@ class ReviewAnalyzer:
         {reviews_text}
         """
         
-        completion = self.client.chat.completions.create(
-            model=Config.MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-            timeout=45
-        )
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                completion = self.client.chat.completions.create(
+                    model=Config.MODEL_NAME,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"},
+                    timeout=45
+                )
+                break
+            except Exception as e:
+                logging.warning(f"Attempt {attempt + 1} failed for master analysis: {str(e)}")
+                if attempt < max_retries - 1:
+                    switched = self._switch_api_key()
+                    if not switched:
+                        time.sleep(2 * (attempt + 1))
+                else:
+                    raise e
         
         data = json.loads(completion.choices[0].message.content)
         self.themes = data.get("themes", [])
@@ -121,6 +148,9 @@ class ReviewAnalyzer:
                 if attempt == max_retries - 1:
                     logging.error("Max retries reached for batch categorization. Skipping batch.")
                 else:
+                    switched = self._switch_api_key()
+                    if switched:
+                        continue # Immediately retry with the new active key
                     time.sleep(2 * (attempt + 1)) 
         return {}
 
