@@ -125,25 +125,25 @@ class ReviewAnalyzer:
         return {}
 
     def categorize_reviews(self, all_reviews):
-        """Categorizes all reviews into the discovered themes using parallel processing."""
-        from concurrent.futures import ThreadPoolExecutor
-        
-        logging.info(f"Categorizing {len(all_reviews)} reviews into themes using parallel processing...")
+        """Categorizes all reviews into the discovered themes sequentially to respect rate limits."""
+        logging.info(f"Categorizing {len(all_reviews)} reviews into themes (Sequential Batching)...")
         categorized_data = {theme: [] for theme in self.themes}
         categorized_data["Other"] = []
         
-        batch_size = 100
+        batch_size = 40  # Safely inside the 6000 TPM limit
         batches = [all_reviews[i:i + batch_size] for i in range(0, len(all_reviews), batch_size)]
         
         results_map = {}
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            future_to_batch = {executor.submit(self._process_batch, batch, self.themes): batch for batch in batches}
-            for future in future_to_batch:
-                try:
-                    batch_mapping = future.result()
-                    results_map.update(batch_mapping)
-                except Exception as e:
-                    logging.error(f"Error in parallel batch: {e}")
+        for index, batch in enumerate(batches):
+            try:
+                logging.info(f"Processing batch {index + 1}/{len(batches)}...")
+                batch_mapping = self._process_batch(batch, self.themes)
+                results_map.update(batch_mapping)
+                # Sleep to respect Tokens Per Minute (TPM) limits
+                if index < len(batches) - 1:
+                    time.sleep(15) 
+            except Exception as e:
+                logging.error(f"Error in batch {index + 1}: {e}")
 
         for review in all_reviews:
             theme = results_map.get(review['reviewId'], "Other")
