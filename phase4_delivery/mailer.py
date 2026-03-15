@@ -78,36 +78,44 @@ class Mailer:
         """
         return full_html
 
-    def send_via_resend(self, report_content, html_body):
-        """Sends the email using Resend API (HTTPS) to bypass SMTP blocks."""
+    def send_via_brevo(self, report_content, html_body):
+        """Sends the email using Brevo (Sendinblue) API (HTTPS) to bypass SMTP blocks."""
         import requests
         from datetime import datetime
-        print(f"Preparing to send HTML email via Resend HTTP API to {self.recipient}...")
+        print(f"Preparing to send HTML email via Brevo HTTP API to {self.recipient}...")
         
         headers = {
-            "Authorization": f"Bearer {Config.RESEND_API_KEY}",
-            "Content-Type": "application/json"
+            "api-key": Config.BREVO_API_KEY,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
         
         payload = {
-            "from": "INDmoney Pulse <onboarding@resend.dev>",
-            "to": [self.recipient],
+            "sender": {
+                "name": "INDmoney Pulse Admin",
+                "email": self.smtp_user  # Must be a verified sender in Brevo
+            },
+            "to": [
+                {
+                    "email": self.recipient
+                }
+            ],
             "subject": f"⚡ INDmoney Pulse: {datetime.now().strftime('%b %d')} Report",
-            "html": html_body,
-            "text": f"Hello,\n\nHere is your INDmoney Pulse report:\n\n{report_content}"
+            "htmlContent": html_body,
+            "textContent": f"Hello,\n\nHere is your INDmoney Pulse report:\n\n{report_content}"
         }
         
-        response = requests.post("https://api.resend.com/emails", json=payload, headers=headers)
+        response = requests.post("https://api.brevo.com/v3/smtp/email", json=payload, headers=headers)
         
         if response.status_code in [200, 201]:
-            print("Premium HTML Email sent successfully via Resend API! ✅")
+            print("Premium HTML Email sent successfully via Brevo API! ✅")
             return True
         else:
-            print(f"Failed to send email via Resend: {response.status_code} - {response.text} ❌")
+            print(f"Failed to send email via Brevo: {response.status_code} - {response.text} ❌")
             return False
 
     def send_email(self):
-        """Sends the report via email, preferring Resend API if configured."""
+        """Sends the report via email, preferring Brevo API if configured."""
         if not self.recipient:
             print("Error: RECIPIENT_EMAIL is not set in .env")
             return False
@@ -117,13 +125,13 @@ class Mailer:
             report_content = self.load_report()
             html_body = self.generate_html_body(report_content)
             
-            # Prefer Resend HTTP API if configured (Bypasses Railway SMTP Block)
-            if hasattr(Config, 'RESEND_API_KEY') and Config.RESEND_API_KEY:
-                return self.send_via_resend(report_content, html_body)
+            # Prefer Brevo HTTP API if configured (Bypasses Railway SMTP Block, supports any recipient)
+            if hasattr(Config, 'BREVO_API_KEY') and Config.BREVO_API_KEY:
+                return self.send_via_brevo(report_content, html_body)
                 
             # Fallback to Standard SMTP (Used by GitHub Actions)
             if not self.smtp_user or not self.smtp_pass:
-                print("Error: Neither RESEND_API_KEY nor SMTP credentials are set in .env")
+                print("Error: Neither BREVO_API_KEY nor SMTP credentials are set in .env")
                 return False
 
             print(f"Preparing to send HTML email via standard SMTP to {self.recipient}...")

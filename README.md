@@ -38,7 +38,7 @@ The system is designed to run completely autonomously. However, if you need to m
 1. Navigate to your live Vercel dashboard: `https://indmoney-review.vercel.app/`
 2. Scroll to the **Control Center** / **Admin** section.
 3. Click **"Run Full Analysis"**. This will trigger the Railway backend to scrape new reviews, analyze them, and update the display.
-4. Click **"Email Weekly Report"** to dispatch the summary to the configured email address.
+4. Add your recipient email and click **"Email Weekly Report"**. (Note: This manual frontend trigger requires a `BREVO_API_KEY` configured in Railway since Railway blocks standard SMTP on free plans).
 
 ### Option 2: Via GitHub Actions
 1. Go to your GitHub Repository -> **Actions** tab.

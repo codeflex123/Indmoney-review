@@ -93,7 +93,7 @@ graph TD
 ## 🔒 Security & Constraints
 - **PII Protection**: Names/Profile photos strictly omitted from the database.
 - **API Keys**: Managed via `.env` (Groq & Gemini keys required).
-- **Email Delivery Constraints**: Railway blocks outbound SMTP (ports 25, 465, 587) on free plans. Manual frontend email triggers use the **Resend API** (Requires `RESEND_API_KEY`). The automated GitHub Action uses standard Gmail SMTP.
+- **Email Delivery Constraints**: Railway blocks outbound SMTP (ports 25, 465, 587) on free plans. Manual frontend email triggers use the **Brevo (Sendinblue) API** (Requires `BREVO_API_KEY`). The automated GitHub Action uses standard Gmail SMTP.
 - **Rate Limiting**: Groq TPM/TPD and Gemini limits managed via batching and delays.
 
 ---

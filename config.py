@@ -20,8 +20,7 @@ class Config:
     SMTP_USER = os.getenv("SMTP_USER")
     SMTP_PASS = os.getenv("SMTP_PASS")
     RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL")
-    RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-
+    BREVO_API_KEY = os.getenv("BREVO_API_KEY")
     
     @staticmethod
     def validate():
