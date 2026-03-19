@@ -128,8 +128,16 @@ def save_to_json(review_list):
     import json
     filename = 'phase1_ingestion/reviews_preview.json'
     os.makedirs(os.path.dirname(filename), exist_ok=True)
+    # Convert datetime objects to strings for JSON serialization
+    serialized_list = []
+    for r in review_list:
+        r_copy = r.copy()
+        if isinstance(r_copy.get('at'), datetime):
+            r_copy['at'] = r_copy['at'].isoformat()
+        serialized_list.append(r_copy)
+        
     with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(review_list, f, indent=4)
+        json.dump(serialized_list, f, indent=4)
 
 if __name__ == "__main__":
     import argparse
