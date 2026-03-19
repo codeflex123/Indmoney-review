@@ -66,8 +66,8 @@ def run_pipeline():
 
 def main():
     if "--now" in sys.argv:
-        run_pipeline()
-        return
+        success = run_pipeline()
+        sys.exit(0 if success else 1)
 
     logging.info("🕰 Orchestrator started. Mode: Weekly (Tuesday 15:50 IST)")
     
