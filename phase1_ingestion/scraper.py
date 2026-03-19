@@ -69,11 +69,18 @@ def scrape_reviews(max_count=1000, weeks=12, stop_at_existing=True):
         )
         
         stop_signal = False
+        consecutive_existing = 0
         for r in result:
             if stop_at_existing and r['reviewId'] in existing_ids:
-                print(f"Reached existing review. Stopping scrape.")
-                stop_signal = True
-                break
+                consecutive_existing += 1
+                if consecutive_existing >= 5:
+                    print(f"Reached 5 consecutive existing reviews. Stopping scrape.")
+                    stop_signal = True
+                    break
+                continue
+            else:
+                consecutive_existing = 0
+
             if r['at'] < cutoff_date:
                 stop_signal = True
                 break

@@ -154,7 +154,8 @@ def cleanup_pii_db():
 def run_pipeline_admin():
     import subprocess
     # Run analyzer and pulsar sequentially in the background to avoid ephemeral state loss between manual clicks
-    cmd = f"{sys.executable} phase2_llm/analyzer.py && {sys.executable} phase3_insights/pulsar.py"
+    # Run scraper, analyzer, and pulsar sequentially
+    cmd = f"{sys.executable} phase1_ingestion/scraper.py --count 500 --weeks 12 && {sys.executable} phase2_llm/analyzer.py && {sys.executable} phase3_insights/pulsar.py"
     
     log_file = "/tmp/pipeline.log"
     with open(log_file, "w") as f:

@@ -2,6 +2,7 @@ google-play-scraper
 groq
 pandas
 google-generativeai
+sqlalchemy
 python-dotenv
 pytz
 fastapi
