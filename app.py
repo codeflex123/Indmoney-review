@@ -39,16 +39,13 @@ def fetch_analysis():
         return None
 
 def trigger_pipeline(limit=500):
-    cmd = f"{sys.executable} phase1_ingestion/scraper.py --count {limit} --weeks 12 && {sys.executable} phase2_llm/analyzer.py --limit {limit} && {sys.executable} phase3_insights/pulsar.py"
-    log_file = "/tmp/pipeline.log"
-    with open(log_file, "w") as f:
-        subprocess.Popen(
-            cmd,
-            shell=True,
-            cwd=os.path.abspath(os.path.dirname(__file__)),
-            stdout=f,
-            stderr=subprocess.STDOUT
-        )
+    log_file = "pipeline.log"
+    cmd = f"({sys.executable} phase1_ingestion/scraper.py --count {limit} --weeks 12 && {sys.executable} phase2_llm/analyzer.py --limit {limit} && {sys.executable} phase3_insights/pulsar.py) > {log_file} 2>&1"
+    subprocess.Popen(
+        cmd,
+        shell=True,
+        cwd=os.path.abspath(os.path.dirname(__file__))
+    )
     st.toast("Pipeline started in the background! It takes a few minutes to complete.", icon="🚀")
     return True
 
@@ -75,10 +72,11 @@ def fetch_email_preview():
 
 def fetch_pipeline_logs():
     try:
-        with open("/tmp/pipeline.log", "r") as f:
-            return f.read()
+        with open("pipeline.log", "r") as f:
+            content = f.read()
+            return content if content else "Starting pipeline... please wait."
     except Exception:
-        return "No logs available."
+        return "No logs available. Click 'Run Full Analysis' to start."
 
 # --- Main UI ---
 st.title("📈 INDmoney Pulse")
