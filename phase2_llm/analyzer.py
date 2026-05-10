@@ -189,7 +189,7 @@ class ReviewAnalyzer:
         categorized_data = {theme: [] for theme in self.themes}
         categorized_data["Other"] = []
         
-        batch_size = 20  # Reduced to avoid 6000 TPM limit
+        batch_size = 50  # Increased batch size to process faster
         batches = [all_reviews[i:i + batch_size] for i in range(0, len(all_reviews), batch_size)]
         
         results_map = {}
@@ -198,9 +198,7 @@ class ReviewAnalyzer:
                 logging.info(f"Processing batch {index + 1}/{len(batches)}...")
                 batch_mapping = self._process_batch(batch, self.themes)
                 results_map.update(batch_mapping)
-                # Sleep to respect Tokens Per Minute (TPM) limits
-                if index < len(batches) - 1:
-                    time.sleep(25)
+                # We rely on the API's natural rate limit error and _switch_api_key() instead of a hardcoded sleep
             except Exception as e:
                 logging.error(f"Error in batch {index + 1}: {e}")
 
