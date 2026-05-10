@@ -45,7 +45,7 @@ def trigger_pipeline(limit=500):
         subprocess.Popen(
             cmd,
             shell=True,
-            cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+            cwd=os.path.abspath(os.path.dirname(__file__)),
             stdout=f,
             stderr=subprocess.STDOUT
         )
