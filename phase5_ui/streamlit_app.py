@@ -10,7 +10,7 @@ import json
 # Add project root to sys.path to allow importing local modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from db import get_db_connection
-from phase4_delivery.email_sender import send_brevo_email
+from phase4_delivery.mailer import Mailer
 
 
 st.set_page_config(
@@ -56,7 +56,8 @@ def trigger_pipeline(limit=500):
 
 def trigger_email(email_address):
     try:
-        success = send_brevo_email(email_address)
+        mailer = Mailer(recipient=email_address)
+        success = mailer.send_email()
         if success:
             st.toast(f"Email delivery initiated to {email_address}!", icon="📧")
             return True
