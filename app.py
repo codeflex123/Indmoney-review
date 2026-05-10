@@ -65,12 +65,12 @@ def trigger_pipeline(limit=500):
 def trigger_email(email_address):
     try:
         mailer = Mailer(recipient=email_address)
-        success = mailer.send_email()
+        success, message = mailer.send_email()
         if success:
             st.toast(f"Email delivery initiated to {email_address}!", icon="📧")
             return True
         else:
-            st.error("Failed to send email.")
+            st.error(f"Failed to send email: {message}")
             return False
     except Exception as e:
         st.error(f"Error sending email: {str(e)}")

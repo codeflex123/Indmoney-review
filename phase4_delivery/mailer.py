@@ -93,7 +93,7 @@ class Mailer:
         payload = {
             "sender": {
                 "name": "INDmoney Pulse Admin",
-                "email": self.smtp_user  # Must be a verified sender in Brevo
+                "email": self.smtp_user or "admin@indmoney.com"  # Must be a verified sender in Brevo
             },
             "to": [
                 {
@@ -109,16 +109,16 @@ class Mailer:
         
         if response.status_code in [200, 201]:
             print("Premium HTML Email sent successfully via Brevo API! ✅")
-            return True
+            return True, "Success"
         else:
-            print(f"Failed to send email via Brevo: {response.status_code} - {response.text} ❌")
-            return False
+            error_msg = f"Brevo API Error: {response.status_code} - {response.text}"
+            print(error_msg + " ❌")
+            return False, error_msg
 
     def send_email(self):
         """Sends the report via email, preferring Brevo API if configured."""
         if not self.recipient:
-            print("Error: RECIPIENT_EMAIL is not set in .env")
-            return False
+            return False, "Error: RECIPIENT_EMAIL is not set"
             
         try:
             from datetime import datetime
@@ -131,8 +131,7 @@ class Mailer:
                 
             # Fallback to Standard SMTP (Used by GitHub Actions)
             if not self.smtp_user or not self.smtp_pass:
-                print("Error: Neither BREVO_API_KEY nor SMTP credentials are set in .env")
-                return False
+                return False, "Error: Neither BREVO_API_KEY nor SMTP credentials are set in Secrets."
 
             print(f"Preparing to send HTML email via standard SMTP to {self.recipient}...")
             
@@ -161,11 +160,12 @@ class Mailer:
             server.quit()
             
             print("Premium HTML Email sent successfully via SMTP! ✅")
-            return True
+            return True, "Success"
             
         except Exception as e:
-            print(f"Failed to send email: {e} ❌")
-            return False
+            error_msg = f"Failed to send email: {e}"
+            print(error_msg + " ❌")
+            return False, error_msg
 
 if __name__ == "__main__":
     from datetime import datetime
