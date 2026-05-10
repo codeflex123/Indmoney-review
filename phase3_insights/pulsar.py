@@ -86,7 +86,7 @@ class Pulsar:
         def get_stars(score):
             return "⭐" * int(score)
             
-        quotes_md = "\n".join([f"> {get_stars(q.get('score', 5))}\n> \"{q.get('content')}\"" for q in quotes])
+        quotes_md = "\n\n".join([f"> {get_stars(q.get('score', 5))}\n> \"{q.get('content')}\"" for q in quotes])
         actions_md = "\n".join([f"- {a}" for a in actions])
         
         report_content = f"""# INDmoney Weekly Pulse ⚡

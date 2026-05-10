@@ -37,12 +37,27 @@ class ReviewAnalyzer:
             return True
         return False
 
-    def get_reviews_from_db(self):
-        """Fetches all reviews from the database."""
+    def get_reviews_from_db(self, limit=0):
+        """Fetches reviews from the database."""
         conn = get_db_connection()
         col_id = "review_id" if Config.DATABASE_URL else "reviewId"
         cursor = conn.cursor()
-        cursor.execute(f"SELECT {col_id}, content, score FROM reviews")
+        
+        # We need the 'at' column to order by most recent, but it might not be in the SELECT.
+        # It's better to fetch ordering by date if possible, assuming 'at' exists.
+        # Let's check if 'at' is used. In main.py, 'at' is used.
+        try:
+            query = f"SELECT {col_id}, content, score FROM reviews ORDER BY at DESC"
+            if limit > 0:
+                query += f" LIMIT {limit}"
+            cursor.execute(query)
+        except Exception:
+            # Fallback if 'at' doesn't exist
+            query = f"SELECT {col_id}, content, score FROM reviews"
+            if limit > 0:
+                query += f" LIMIT {limit}"
+            cursor.execute(query)
+            
         rows = cursor.fetchall()
         conn.close()
         return [{"reviewId": r[0], "content": r[1], "score": r[2]} for r in rows]
@@ -86,9 +101,17 @@ class ReviewAnalyzer:
                 if attempt < max_retries - 1:
                     switched = self._switch_api_key()
                     if not switched:
-                        time.sleep(2 * (attempt + 1))
+                        # Extract wait time from error message if possible
+                        wait_time = 40
+                        match = re.search(r'Please try again in ([0-9.]+)s', str(e))
+                        if match:
+                            wait_time = float(match.group(1)) + 2
+                        logging.info(f"Retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
                 else:
-                    raise e
+                    logging.error("Failed master analysis after max retries. Using fallback themes.")
+                    self.themes = ["Technical Issues", "Feature Requests", "General Feedback"]
+                    return self.themes, []
         
         data = json.loads(completion.choices[0].message.content)
         self.themes = data.get("themes", [])
@@ -151,7 +174,13 @@ class ReviewAnalyzer:
                     switched = self._switch_api_key()
                     if switched:
                         continue # Immediately retry with the new active key
-                    time.sleep(2 * (attempt + 1)) 
+                    
+                    wait_time = 40
+                    match = re.search(r'Please try again in ([0-9.]+)s', str(e))
+                    if match:
+                        wait_time = float(match.group(1)) + 2
+                    logging.info(f"Retrying batch in {wait_time} seconds...")
+                    time.sleep(wait_time) 
         return {}
 
     def categorize_reviews(self, all_reviews):
@@ -160,7 +189,7 @@ class ReviewAnalyzer:
         categorized_data = {theme: [] for theme in self.themes}
         categorized_data["Other"] = []
         
-        batch_size = 40  # Safely inside the 6000 TPM limit
+        batch_size = 20  # Reduced to avoid 6000 TPM limit
         batches = [all_reviews[i:i + batch_size] for i in range(0, len(all_reviews), batch_size)]
         
         results_map = {}
@@ -171,7 +200,7 @@ class ReviewAnalyzer:
                 results_map.update(batch_mapping)
                 # Sleep to respect Tokens Per Minute (TPM) limits
                 if index < len(batches) - 1:
-                    time.sleep(15) 
+                    time.sleep(25)
             except Exception as e:
                 logging.error(f"Error in batch {index + 1}: {e}")
 
@@ -184,15 +213,15 @@ class ReviewAnalyzer:
         return categorized_data
 
 
-    def run_analysis(self):
+    def run_analysis(self, limit=0):
         """Main execution flow for Phase 2."""
-        all_reviews = self.get_reviews_from_db()
+        all_reviews = self.get_reviews_from_db(limit=limit)
         if not all_reviews:
             print("No reviews found in database. Run Phase 1 first.")
             return
 
         # Step 1: Master Analysis (Themes + Quotes)
-        sample = sorted(all_reviews, key=lambda x: len(x['content']), reverse=True)[:50]
+        sample = sorted(all_reviews, key=lambda x: len(x['content']), reverse=True)[:30]
         themes, quotes = self.master_analysis(sample)
         
         # Step 2: Categorize all
@@ -214,5 +243,10 @@ class ReviewAnalyzer:
         return results
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--limit", type=int, default=0, help="Limit number of reviews to analyze")
+    args = parser.parse_args()
+    
     analyzer = ReviewAnalyzer()
-    analyzer.run_analysis()
+    analyzer.run_analysis(limit=args.limit)

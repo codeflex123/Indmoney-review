@@ -8,7 +8,7 @@ An automated, end-to-end intelligence pipeline designed to scrape Google Play St
 - **Privacy First**: Strict multi-layer PII (Personally Identifiable Information) redaction using Regex filters and AI guardrails to protect user privacy (No names, emails, or phone numbers).
 - **AI-Driven Insights**: Uses Groq LLMs to dynamically discover 3-5 core themes and extract the most impactful "Real User Quotes".
 - **Strategic Synthesis**: Uses Google Gemini to generate 3 actionable, strategic recommendations based on the weekly feedback.
-- **Executive Dashboard**: A beautiful, responsive Next.js frontend (hosted on Vercel) connected to a FastAPI backend (hosted on Railway) backed by a PostgreSQL database.
+- **Executive Dashboard**: A beautiful, responsive Streamlit frontend connected to a FastAPI backend backed by a PostgreSQL database.
 - **Automated Delivery**: Scheduled via GitHub Actions to automatically run the full pipeline and email the report every Tuesday at 3:50 PM IST.
 
 ---
@@ -24,7 +24,7 @@ graph TD
     B[Phase 1: Ingestion<br>Scrape Play Store & Clean PII] --> C[Store in PostgreSQL DB]
     C --> D[Phase 2: LLM Analysis<br>Groq identifies Themes & Quotes]
     D --> E[Phase 3: Insight Generation<br>Gemini Synthesizes Strategic Actions]
-    E --> F[Phase 5: Update Next.js Dashboard]
+    E --> F[Phase 5: Update Streamlit Dashboard]
     E --> G[Phase 4 & 6: Automation<br>Draft & Send Weekly Email Report]
 ```
 
@@ -34,11 +34,12 @@ graph TD
 
 The system is designed to run completely autonomously. However, if you need to manually trigger the pipeline for the upcoming week, you have two options:
 
-### Option 1: Via the Live Dashboard (Recommended)
-1. Navigate to your live Vercel dashboard: `https://indmoney-review.vercel.app/`
-2. Scroll to the **Control Center** / **Admin** section.
-3. Click **"Run Full Analysis"**. This will trigger the Railway backend to scrape new reviews, analyze them, and update the display.
-4. Add your recipient email and click **"Email Weekly Report"**. (Note: This manual frontend trigger requires a `BREVO_API_KEY` configured in Railway since Railway blocks standard SMTP on free plans).
+### Option 1: Via the Local Dashboard (Recommended)
+1. Start the frontend and backend locally by running `./run_local.sh` in the terminal.
+2. Navigate to your local dashboard (`http://localhost:8501`).
+3. Scroll to the **Control Center** / **Admin** section.
+4. Click **"Run Full Analysis"**. This will trigger the backend to scrape new reviews, analyze them, and update the display.
+5. Add your recipient email and click **"Email Weekly Report"**.
 
 ### Option 2: Via GitHub Actions
 1. Go to your GitHub Repository -> **Actions** tab.

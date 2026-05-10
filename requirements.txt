@@ -14,3 +14,5 @@ markdown
 schedule
 psycopg2-binary
 sqlalchemy
+streamlit
+plotly
