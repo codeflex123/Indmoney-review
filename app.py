@@ -4,11 +4,13 @@ import plotly.express as px
 import time
 import sys
 import os
-import subprocess
 import json
 
-from db import get_db_connection
+from db import get_db_connection, init_db
 from phase4_delivery.mailer import Mailer
+from phase1_ingestion.scraper import scrape_reviews, save_to_db, save_to_json
+from phase2_llm.analyzer import ReviewAnalyzer
+from phase3_insights.pulsar import Pulsar
 
 
 st.set_page_config(
@@ -39,15 +41,26 @@ def fetch_analysis():
         return None
 
 def trigger_pipeline(limit=500):
-    log_file = "pipeline.log"
-    cmd = f"({sys.executable} phase1_ingestion/scraper.py --count {limit} --weeks 12 && {sys.executable} phase2_llm/analyzer.py --limit {limit} && {sys.executable} phase3_insights/pulsar.py) > {log_file} 2>&1"
-    subprocess.Popen(
-        cmd,
-        shell=True,
-        cwd=os.path.abspath(os.path.dirname(__file__))
-    )
-    st.toast("Pipeline started in the background! It takes a few minutes to complete.", icon="🚀")
-    return True
+    try:
+        with st.spinner("Scraping Google Play Store..."):
+            init_db()
+            data = scrape_reviews(max_count=limit, weeks=12)
+            save_to_db(data)
+            save_to_json(data)
+            
+        with st.spinner("Analyzing Sentiment with Groq AI..."):
+            analyzer = ReviewAnalyzer()
+            analyzer.run_analysis(limit=limit)
+            
+        with st.spinner("Generating Executive Report with Gemini..."):
+            pulsar = Pulsar()
+            pulsar.run()
+            
+        st.success("Analysis Complete!")
+        time.sleep(1)
+        st.rerun()
+    except Exception as e:
+        st.error(f"Pipeline failed: {str(e)}")
 
 def trigger_email(email_address):
     try:
@@ -70,13 +83,7 @@ def fetch_email_preview():
     except Exception:
         return "No preview available. Run pipeline first."
 
-def fetch_pipeline_logs():
-    try:
-        with open("pipeline.log", "r") as f:
-            content = f.read()
-            return content if content else "Starting pipeline... please wait."
-    except Exception:
-        return "No logs available. Click 'Run Full Analysis' to start."
+
 
 # --- Main UI ---
 st.title("📈 INDmoney Pulse")
@@ -92,10 +99,6 @@ num_reviews = st.sidebar.number_input("Number of Reviews to Analyze", min_value=
 
 if st.sidebar.button("🚀 Run Full Analysis", use_container_width=True):
     trigger_pipeline(num_reviews)
-
-if st.sidebar.button("📋 Check Status / Logs", use_container_width=True):
-    logs = fetch_pipeline_logs()
-    st.sidebar.text_area("Pipeline Progress", logs, height=150)
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Delivery Actions")
