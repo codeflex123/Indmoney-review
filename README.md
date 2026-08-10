@@ -8,23 +8,23 @@ An automated, end-to-end intelligence pipeline designed to scrape Google Play St
 - **Privacy First**: Strict multi-layer PII (Personally Identifiable Information) redaction using Regex filters and AI guardrails to protect user privacy (No names, emails, or phone numbers).
 - **AI-Driven Insights**: Uses Groq LLMs to dynamically discover 3-5 core themes and extract the most impactful "Real User Quotes".
 - **Strategic Synthesis**: Uses Google Gemini to generate 3 actionable, strategic recommendations based on the weekly feedback.
-- **Executive Dashboard**: A beautiful, responsive Streamlit frontend connected to a FastAPI backend backed by a PostgreSQL database.
-- **Automated Delivery**: Scheduled via GitHub Actions to automatically run the full pipeline and email the report every Tuesday at 3:50 PM IST.
+- **Executive Dashboard**: A beautiful, responsive Streamlit dashboard serving as both the UI and the orchestrator.
+- **Automated Delivery**: Scheduled via GitHub Actions to automatically run the full pipeline and email the report weekly.
 
 ---
 
 ## 🏗️ System Flow
 
-The system operates in a sequential, 6-phase pipeline:
+The system operates in a sequential pipeline directly orchestrated by Streamlit:
 
 ```mermaid
 graph TD
     A1[Scheduled: GitHub Actions Trigger] --> B
-    A2[Manual: Admin Dashboard Trigger] --> B
-    B[Phase 1: Ingestion<br>Scrape Play Store & Clean PII] --> C[Store in PostgreSQL DB]
+    A2[Manual: Streamlit UI Button] --> B
+    B[Phase 1: Ingestion<br>Scrape Play Store & Clean PII] --> C[Store in SQLite / Postgres DB]
     C --> D[Phase 2: LLM Analysis<br>Groq identifies Themes & Quotes]
     D --> E[Phase 3: Insight Generation<br>Gemini Synthesizes Strategic Actions]
-    E --> F[Phase 5: Update Streamlit Dashboard]
+    E --> F[Update Streamlit Dashboard View]
     E --> G[Phase 4 & 6: Automation<br>Draft & Send Weekly Email Report]
 ```
 

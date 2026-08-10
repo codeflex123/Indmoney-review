@@ -55,15 +55,14 @@ Automated system to analyze Play Store reviews for **INDmoney**, extract themes 
 - **Content**: Professional layout containing the "One-Page Weekly Pulse".
 
 ### Phase 5: Web UI (Executive Dashboard)
-- **Frontend Framework**: [Next.js](https://nextjs.org/) (React, TypeScript, Tailwind CSS).
-- **Backend Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python).
+- **Framework**: [Streamlit](https://streamlit.io/) (Python-based interactive dashboard).
 - **Features**:
   - **The Pulse Overview**: Beautiful, premium layout displaying aggregated ratings and sentiment trends.
-  - **Thematic Breakdown**: Visual charts (Bar/Pie) showing the 3-5 themes identified by Groq.
-  - **Live Review Explorer**: Searchable and filterable table of the 500 reviews.
+  - **Thematic Breakdown**: Dynamic charts (Pie/Donut) showing the 3-5 themes identified by Groq.
+  - **Live Review Explorer**: Searchable and filterable table of the reviews (Rating, Date, Content, Helpfulness).
   - **Control Center**: 
-    - **"Trigger Analysis"**: Run Phase 2 & 3 via API.
-    - **"Send Weekly Note"**: Trigger Phase 4 email dispatch.
+    - **"Run Full Analysis"**: Direct manual trigger to run the entire pipeline (scraping, cleaning, database update, Groq & Gemini analyses).
+    - **"Email Weekly Report"**: Trigger Phase 4 email dispatch right from the UI.
 
 ### Phase 6: Scheduler & Automation
 - **Orchestrator**: Handled by a dedicated Python script (`orchestrator.py`) and backed up by GitHub Actions.
