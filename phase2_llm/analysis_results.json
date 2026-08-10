@@ -1,0 +1,32 @@
+{
+    "themes": [
+        "Technical problems and errors",
+        "Inconsistent features and functionality",
+        "Lack of transparency and communication",
+        "Poor customer support",
+        "Positive Feedback"
+    ],
+    "categorized_reviews": {
+        "Technical problems and errors": 15,
+        "Inconsistent features and functionality": 10,
+        "Lack of transparency and communication": 7,
+        "Poor customer support": 5,
+        "Positive Feedback": 25,
+        "Other": 3
+    },
+    "top_quotes": [
+        {
+            "content": "I was having 38k rupee in wallet and i was earning 5 to 7k fno profit but due to app outage was unable to book profit. Customer support did not call back even after raising multiple tickets.",
+            "score": 1
+        },
+        {
+            "content": "Terrible service! It's been over a week since I requested a deposit for US stocks trading, and they're clueless about the status. Getting in touch is a nightmare.",
+            "score": 1
+        },
+        {
+            "content": "Best app I have ever used. It is an another level broker because it contains Indian and US stocks. The add money and withdraw is so easy.",
+            "score": 5
+        }
+    ],
+    "timestamp": "2026-08-10T18:00:00.000000"
+}

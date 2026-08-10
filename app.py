@@ -23,14 +23,35 @@ st.set_page_config(
 # --- Helper Functions ---
 @st.cache_data(ttl=60)
 def fetch_reviews(limit=100):
+    df = pd.DataFrame()
     try:
         conn = get_db_connection()
         query = f"SELECT * FROM reviews ORDER BY at DESC LIMIT {limit}"
         df = pd.read_sql_query(query, conn)
         conn.close()
-        return df.to_dict('records')
-    except Exception as e:
-        return []
+    except Exception:
+        pass
+
+    if df.empty:
+        # Fallback to local reviews_preview.json if database is empty (e.g. fresh Streamlit deployment)
+        try:
+            with open("phase1_ingestion/reviews_preview.json", "r") as f:
+                data = json.load(f)
+                df = pd.DataFrame(data)
+                if not df.empty:
+                    df['at'] = pd.to_datetime(df['at'])
+                    df = df.sort_values(by='at', ascending=False)
+        except Exception:
+            pass
+
+    if not df.empty:
+        # Standardize column naming in case Postgres names are returned
+        if 'thumbs_up_count' in df.columns:
+            df = df.rename(columns={'thumbs_up_count': 'thumbsUpCount'})
+        if 'review_id' in df.columns:
+            df = df.rename(columns={'review_id': 'reviewId'})
+        return df.head(limit).to_dict('records')
+    return []
 
 @st.cache_data(ttl=60)
 def fetch_analysis():
