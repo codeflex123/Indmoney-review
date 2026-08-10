@@ -57,6 +57,9 @@ def trigger_pipeline(limit=500):
             pulsar.run()
             
         st.success("Analysis Complete!")
+        # Clear cached functions to load the new data immediately
+        fetch_reviews.clear()
+        fetch_analysis.clear()
         time.sleep(1)
         st.rerun()
     except Exception as e:
